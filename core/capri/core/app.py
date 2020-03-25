@@ -15,15 +15,18 @@ class App(metaclass=Singleton):
         self._bootstrap = bootstrap
         self._providers = Registry()
 
-    def register_value(self, value, token, *, ctx_iface=None, force=False):
+    def register_value(self, value, token, *, ctx_iface=None,
+                       force=False):
         provider = self._get_context_provider(ctx_iface)
         provider.register_value(value, token, force=force)
 
-    def register_instance(self, instance, token, *, ctx_iface=None, force=False):
+    def register_instance(self, instance, token, *, ctx_iface=None,
+                          force=False):
         provider = self._get_context_provider(ctx_iface)
         provider.register_instance(instance, token, force=force)
 
-    def register_factory(self, factory, token, *, ctx_iface=None, force=False):
+    def register_factory(self, factory, token, *, ctx_iface=None,
+                         force=False):
         provider = self._get_context_provider(ctx_iface)
         provider.register_factory(factory, token, force=force)
 
@@ -32,7 +35,7 @@ class App(metaclass=Singleton):
             iface = [factory]
         elif not isinstance(iface, list):
             iface = [iface]
-        
+
         if RootContext not in iface:
             iface.append(RootContext)
 
@@ -60,4 +63,4 @@ class App(metaclass=Singleton):
         return provider
 
     def _generate_context_key(self, ctx_iface):
-       return str(ctx_iface).replace('.', ':').replace('\'', '')
+        return str(ctx_iface).replace('.', ':').replace('\'', '')

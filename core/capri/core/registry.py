@@ -30,7 +30,7 @@ class RegistrationError(Exception):
 
 
 class RegistrationExistsError(RegistrationError):
-    
+
     def __init__(self, key):
         super().__init__(
             'An item is already registered under that key: {}. '
@@ -38,6 +38,6 @@ class RegistrationExistsError(RegistrationError):
 
 
 class RegistrationNotFoundError(RegistrationError):
-    
+
     def __init__(self, key):
         super().__init__('No item found at key: {}'.format(key))

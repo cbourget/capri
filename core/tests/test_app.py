@@ -62,7 +62,7 @@ def test_registration(app):
     # Test can't get instance registered in a different context
     with pytest.raises(InjectionError):
         context.get_instance((IInstance, 'i3'))
-    
+
     # Test get many
     app.register_factory(
         instance_factory,
@@ -91,6 +91,7 @@ def test_registration(app):
     _i2 = context.get_instance((IInstance, 'i2'))
     assert _i2 is None
 
+
 def test_settings(app):
     settings = app.settings
 
@@ -105,7 +106,7 @@ def test_settings(app):
         settings.set('a.b.c', 'bar')
 
     # Test delete settings
-    del  settings['a.b']
+    del settings['a.b']
     assert settings.get('a.b') is None
 
     # Test set settings after delete

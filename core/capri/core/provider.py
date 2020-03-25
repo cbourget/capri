@@ -15,7 +15,7 @@ class Provider:
     def get_value(self, token, *, many=False):
         return self._get(self._values, token, many=many)
 
-    def get_instance(self, token,*, many=False):
+    def get_instance(self, token, *, many=False):
         return self._get(self._instances, token, many=many)
 
     def get_factory(self, token, *, many=False):
@@ -51,7 +51,8 @@ class Provider:
             _token
         ) for _token in self._tokens.get(parent_key)]
 
-    def _register_instance_or_factory(self, registry, instance_or_factory, key, *, force=False):
+    def _register_instance_or_factory(self, registry, instance_or_factory,
+                                      key, *, force=False):
         if force is True:
             return registry.register(instance_or_factory, key, force=force)
 
@@ -84,16 +85,15 @@ class Provider:
     def _generate_key(self, token, *, many=False):
         if not isinstance(token, (list, tuple)):
             token = [token]
-            
+
         default = '__default__'
         key = '.'.join([
             self._format_key_part(part)
             for part in token if part != default])
         if many is False:
             key = '{}.{}'.format(key, default)
-        
+
         return key
 
     def _format_key_part(self, part):
         return str(part).replace('.', ':').replace('\'', '')
-    

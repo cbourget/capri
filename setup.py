@@ -5,10 +5,11 @@ version = '0.1.0'
 
 install_requires = []
 
-extras_require = {
+extras_require={
     'tests': [
-        'pytest',
         'coverage',
+        'flake8',
+        'pytest',
         'pytest-cov'
     ]
 }

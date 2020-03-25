@@ -63,7 +63,8 @@ class Injector:
         tokens = []
         for provider in self._providers:
             try:
-                items = self._get_instance_from_provider(token, provider, many=True)
+                items = self._get_instance_from_provider(
+                    token, provider, many=True)
             except RegistrationNotFoundError:
                 continue
 
@@ -92,7 +93,7 @@ class Injector:
         return self._cache.get_instance(token)
 
     def _cache_instance(self, instance, token):
-        self._cache.register_instance(instance, token) 
+        self._cache.register_instance(instance, token)
 
     def _resolve_factory(self, provider, token):
         factory = provider.get_factory(token)
