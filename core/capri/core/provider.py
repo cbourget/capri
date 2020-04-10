@@ -12,14 +12,14 @@ class Provider:
         self._factories = Registry()
         self._tokens = Registry()
 
-    def get_value(self, token, *, many=False):
-        return self._get(self._values, token, many=many)
+    def get_value(self, token, *, multi=False):
+        return self._get(self._values, token, multi=multi)
 
-    def get_instance(self, token, *, many=False):
-        return self._get(self._instances, token, many=many)
+    def get_instance(self, token, *, multi=False):
+        return self._get(self._instances, token, multi=multi)
 
-    def get_factory(self, token, *, many=False):
-        return self._get(self._factories, token, many=many)
+    def get_factory(self, token, *, multi=False):
+        return self._get(self._factories, token, multi=multi)
 
     def register_value(self, value, token, *, force=False):
         key = self._register_token(token)
@@ -38,14 +38,14 @@ class Provider:
         return self._register_instance_or_factory(
             self._factories, factory, key, force=force)
 
-    def _get(self, registry, token, *, many=False):
-        if many is True:
-            return self._get_many(registry, token)
+    def _get(self, registry, token, *, multi=False):
+        if multi is True:
+            return self._get_multi(registry, token)
 
         return registry.get(self._generate_key(token))
 
-    def _get_many(self, registry, token):
-        parent_key = self._generate_key(token, many=True)
+    def _get_multi(self, registry, token):
+        parent_key = self._generate_key(token, multi=True)
         return [(
             registry.get(self._generate_key(_token)),
             _token
@@ -70,7 +70,7 @@ class Provider:
         else:
             parent_token = token[:-1]
 
-        parent_key = self._generate_key(parent_token, many=True)
+        parent_key = self._generate_key(parent_token, multi=True)
 
         try:
             tokens = self._tokens.get(parent_key)
@@ -82,7 +82,7 @@ class Provider:
 
         return self._generate_key(token)
 
-    def _generate_key(self, token, *, many=False):
+    def _generate_key(self, token, *, multi=False):
         if not isinstance(token, (list, tuple)):
             token = [token]
 
@@ -90,7 +90,7 @@ class Provider:
         key = '.'.join([
             self._format_key_part(part)
             for part in token if part != default])
-        if many is False:
+        if multi is False:
             key = '{}.{}'.format(key, default)
 
         return key

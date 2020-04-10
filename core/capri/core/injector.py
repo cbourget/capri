@@ -9,9 +9,9 @@ class Injector:
         self._context = context
         self._cache = Provider()
 
-    def get_value(self, token, *, many=False):
-        if many is True:
-            return self._get_many_values(token)
+    def get_value(self, token, *, multi=False):
+        if multi is True:
+            return self._get_multi_values(token)
 
         for provider in self._providers:
             try:
@@ -21,12 +21,12 @@ class Injector:
 
         raise InjectionError('No value found with token: {}'.format(token))
 
-    def _get_many_values(self, token):
+    def _get_multi_values(self, token):
         values = []
         tokens = []
         for provider in self._providers:
             try:
-                result = provider.get_value(token, many=True)
+                result = provider.get_value(token, multi=True)
             except RegistrationNotFoundError:
                 continue
 
@@ -40,9 +40,9 @@ class Injector:
         raise InjectionError(
             'No values found with token: {}'.format(token))
 
-    def get_instance(self, token, *, many=False):
-        if many is True:
-            return self._get_many_instances(token)
+    def get_instance(self, token, *, multi=False):
+        if multi is True:
+            return self._get_multi_instances(token)
 
         try:
             return self._get_instance_from_cache(token)
@@ -58,13 +58,13 @@ class Injector:
         raise InjectionError(
             'No instance found with token: {}'.format(token))
 
-    def _get_many_instances(self, token):
+    def _get_multi_instances(self, token):
         instances = []
         tokens = []
         for provider in self._providers:
             try:
                 items = self._get_instance_from_provider(
-                    token, provider, many=True)
+                    token, provider, multi=True)
             except RegistrationNotFoundError:
                 continue
 
@@ -79,13 +79,13 @@ class Injector:
         raise InjectionError(
             'No instances found with token: {}'.format(token))
 
-    def _get_instance_from_provider(self, token, provider, *, many=False):
+    def _get_instance_from_provider(self, token, provider, *, multi=False):
         try:
-            return provider.get_instance(token, many=many)
+            return provider.get_instance(token, multi=multi)
         except RegistrationNotFoundError:
             pass
 
-        if many is True:
+        if multi is True:
             return self._resolve_factories(provider, token)
         return self._resolve_factory(provider, token)
 
@@ -103,7 +103,7 @@ class Injector:
 
     def _resolve_factories(self, provider, token):
         instances = []
-        factories = provider.get_factory(token, many=True)
+        factories = provider.get_factory(token, multi=True)
         for factory, token in factories:
             try:
                 instance = self._get_instance_from_cache(token)

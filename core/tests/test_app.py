@@ -63,20 +63,20 @@ def test_registration(app):
     with pytest.raises(InjectionError):
         context.get_instance((IInstance, 'i3'))
 
-    # Test get many
+    # Test multi
     app.register_factory(
         instance_factory,
         (IInstance, 'i4'))
-    instances = context.get_instance(IInstance, many=True)
+    instances = context.get_instance(IInstance, multi=True)
     assert len(instances) == 3
 
-    # Test that get many uses the cache
+    # Test that multi instances uses the cache
     _i1 = next((i for i, t in instances if t == IInstance), None)
     _i2 = next((i for i, t in instances if t == (IInstance, 'i2')), None)
     assert _i1 == instance1
     assert _i2 == instance2
 
-    # Test that get many caches factory instances
+    # Test that getting multi instances caches those instances
     _i4 = next((i for i, t in instances if t == (IInstance, 'i4')), None)
     instance4 = context.get_instance((IInstance, 'i4'))
     assert instance4 == _i4
