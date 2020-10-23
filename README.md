@@ -61,7 +61,7 @@ def database_factory(context):
 
 def bootstrap(app):
     # Register the database factory under the Database interface.
-    app.register_factory(database, Database)
+    app.register_factory(database_factory, Database)
 ```
 
 ```python
@@ -80,26 +80,21 @@ from ..database import Database
 
 class UserService:
 
-    def __init__(self, database):
+    # An annotated argument will automatically be injected
+    def __init__(self, database: Database):
         self.database = database
 
     def by_id(self, user_id):
         return self.database.query()...
 
-# Create a user service factory that'll retrieve the database
-# instance from the context then instantiate a user service
-def user_service_factory(context):
-    database = context.get_instance(Database)
-    return UserService(database)
-
 def bootstrap(app):
     # Register the user service factory under the
     # UserService interface. At this point, the user service
     # is not created yet and the database needs not to exist.
-    app.register_factory(user_service_factory, UserService)
+    app.register_factory(UserService)
 ```
 
-In this simpel example, we see how factories can be registered into an
+In this simple example, we see how factories can be registered into an
 app and instances retrieved on demand from an app's context.
 Instances obtained this way are created the first time and then cached.
 

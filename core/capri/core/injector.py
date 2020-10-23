@@ -1,5 +1,8 @@
+from inspect import isclass, signature
+
 from capri.core.provider import Provider
-from capri.core.registry import RegistrationNotFoundError
+from capri.core.registry import RegistrationNotFound
+from capri.utils.annotation import param_is_positionnal
 
 
 class Injector:
@@ -9,25 +12,22 @@ class Injector:
         self._context = context
         self._cache = Provider()
 
-    def get_value(self, token, *, multi=False):
-        if multi is True:
-            return self._get_multi_values(token)
-
+    def get_value(self, token):
         for provider in self._providers:
             try:
                 return provider.get_value(token)
-            except RegistrationNotFoundError:
+            except RegistrationNotFound:
                 pass
 
-        raise InjectionError('No value found with token: {}'.format(token))
+        raise RegistrationNotFound(token)
 
-    def _get_multi_values(self, token):
+    def get_values(self, token):
         values = []
         tokens = []
         for provider in self._providers:
             try:
-                result = provider.get_value(token, multi=True)
-            except RegistrationNotFoundError:
+                result = provider.get_values(token)
+            except RegistrationNotFound:
                 continue
 
             for value, _token in result:
@@ -37,35 +37,30 @@ class Injector:
         if values:
             return values
 
-        raise InjectionError(
-            'No values found with token: {}'.format(token))
+        raise RegistrationNotFound(token)
 
-    def get_instance(self, token, *, multi=False):
-        if multi is True:
-            return self._get_multi_instances(token)
-
+    def get_instance(self, token):
         try:
             return self._get_instance_from_cache(token)
-        except RegistrationNotFoundError:
+        except RegistrationNotFound:
             pass
 
         for provider in self._providers:
             try:
                 return self._get_instance_from_provider(token, provider)
-            except RegistrationNotFoundError:
+            except RegistrationNotFound:
                 pass
 
-        raise InjectionError(
-            'No instance found with token: {}'.format(token))
+        raise RegistrationNotFound(token)
 
-    def _get_multi_instances(self, token):
+    def get_instances(self, token):
         instances = []
         tokens = []
         for provider in self._providers:
             try:
                 items = self._get_instance_from_provider(
                     token, provider, multi=True)
-            except RegistrationNotFoundError:
+            except RegistrationNotFound:
                 continue
 
             for instance, _token in items:
@@ -76,13 +71,13 @@ class Injector:
         if instances:
             return instances
 
-        raise InjectionError(
-            'No instances found with token: {}'.format(token))
+        raise RegistrationNotFound(token)
 
     def _get_instance_from_provider(self, token, provider, *, multi=False):
+        getter = provider.get_instance if not multi else provider.get_instances
         try:
-            return provider.get_instance(token, multi=multi)
-        except RegistrationNotFoundError:
+            return getter(token)
+        except RegistrationNotFound:
             pass
 
         if multi is True:
@@ -97,23 +92,79 @@ class Injector:
 
     def _resolve_factory(self, provider, token):
         factory = provider.get_factory(token)
-        instance = factory(self._context)
+        args, kwargs = self._get_factory_args(factory)
+        instance = factory(*args, **kwargs)
         self._cache_instance(instance, token)
         return instance
 
     def _resolve_factories(self, provider, token):
         instances = []
-        factories = provider.get_factory(token, multi=True)
+        factories = provider.get_factories(token)
         for factory, token in factories:
             try:
                 instance = self._get_instance_from_cache(token)
-            except RegistrationNotFoundError:
+            except RegistrationNotFound:
                 instance = self._get_instance_from_provider(token, provider)
 
             instances.append((instance, token))
 
         return instances
 
+    def _get_factory_args(self, factory):
+        args = []
+        kwargs = {}
+
+        parameters = signature(factory).parameters.values()
+        func = factory if not isclass(factory) else factory.__init__
+        for param in parameters:
+            try:
+                arg = self._resolve_function_param(func, param)
+            except BadSignature as exc:
+                if len(parameters) == 1:
+                    return [self._context], {}
+                else:
+                    raise exc
+
+            if param_is_positionnal(param):
+                args.append(arg)
+            else:
+                kwargs[param.name] = args
+
+        return args, kwargs
+
+    def _resolve_function_param(self, function, param):
+        name = param.name
+        annon = function.__annotations__.get(name)
+        if not annon:
+            raise BadSignature(name)
+
+        for getter in (self._context.get_instance, self._context.get_value):
+            try:
+                arg = getter(annon)
+            except RegistrationNotFound:
+                pass
+            else:
+                break
+        else:
+            raise DependencyNotFound(name, annon)    
+
+        return arg
+
 
 class InjectionError(Exception):
     pass
+
+
+class DependencyNotFound(InjectionError):
+
+    def __init__(self, name, token):
+        super().__init__(
+            'Failed to inject: {}: {}. '.format(name, token))
+
+
+class BadSignature(InjectionError):
+
+    def __init__(self, arg):
+        super().__init__(
+            'Argument "{}" is not annotated. '
+            'Can\'t inject dependency.'.format(arg))

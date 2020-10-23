@@ -5,7 +5,7 @@ from capri.utils.singleton import Singleton
 
 from capri.core.context import RootContext
 from capri.core.provider import Provider
-from capri.core.registry import Registry, RegistrationNotFoundError
+from capri.core.registry import Registry, RegistrationNotFound
 
 
 class App(metaclass=Singleton):
@@ -25,8 +25,9 @@ class App(metaclass=Singleton):
         provider = self._get_context_provider(ctx_iface)
         provider.register_instance(instance, token, force=force)
 
-    def register_factory(self, factory, token, *, ctx_iface=None,
+    def register_factory(self, factory, token=None, *, ctx_iface=None,
                          force=False):
+        token = factory if token is None else token
         provider = self._get_context_provider(ctx_iface)
         provider.register_factory(factory, token, force=force)
 
@@ -56,7 +57,7 @@ class App(metaclass=Singleton):
 
         try:
             provider = self._providers.get(key)
-        except RegistrationNotFoundError:
+        except RegistrationNotFound:
             provider = Provider()
             self._providers.register(provider, key)
 

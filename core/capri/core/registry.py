@@ -10,13 +10,13 @@ class Registry:
         try:
             return self._items[key]
         except KeyError:
-            raise RegistrationNotFoundError(key)
+            raise RegistrationNotFound(key)
 
     def register(self, item, key, *, force=False):
         if force is True or key not in self._items:
             self._items[key] = item
             return key
-        raise RegistrationExistsError(key)
+        raise RegistrationExists(key)
 
     def unregister(self, key):
         try:
@@ -29,7 +29,7 @@ class RegistrationError(Exception):
     pass
 
 
-class RegistrationExistsError(RegistrationError):
+class RegistrationExists(RegistrationError):
 
     def __init__(self, key):
         super().__init__(
@@ -37,7 +37,7 @@ class RegistrationExistsError(RegistrationError):
             'Use force=true to override'.format(key))
 
 
-class RegistrationNotFoundError(RegistrationError):
+class RegistrationNotFound(RegistrationError):
 
     def __init__(self, key):
         super().__init__('No item found at key: {}'.format(key))

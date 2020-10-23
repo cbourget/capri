@@ -1,7 +1,7 @@
 from capri.core.registry import (
     Registry,
     RegistrationError,
-    RegistrationNotFoundError)
+    RegistrationNotFound)
 
 
 class Provider:
@@ -12,14 +12,23 @@ class Provider:
         self._factories = Registry()
         self._tokens = Registry()
 
-    def get_value(self, token, *, multi=False):
-        return self._get(self._values, token, multi=multi)
+    def get_value(self, token):
+        return self._get(self._values, token)
 
-    def get_instance(self, token, *, multi=False):
-        return self._get(self._instances, token, multi=multi)
+    def get_values(self, token):
+        return self._get_all(self._values, token)
 
-    def get_factory(self, token, *, multi=False):
-        return self._get(self._factories, token, multi=multi)
+    def get_instance(self, token):
+        return self._get(self._instances, token)
+
+    def get_instances(self, token):
+        return self._get_all(self._instances, token)
+
+    def get_factory(self, token):
+        return self._get(self._factories, token)
+
+    def get_factories(self, token):
+        return self._get_all(self._factories, token)
 
     def register_value(self, value, token, *, force=False):
         key = self._register_token(token)
@@ -38,13 +47,10 @@ class Provider:
         return self._register_instance_or_factory(
             self._factories, factory, key, force=force)
 
-    def _get(self, registry, token, *, multi=False):
-        if multi is True:
-            return self._get_multi(registry, token)
-
+    def _get(self, registry, token):
         return registry.get(self._generate_key(token))
 
-    def _get_multi(self, registry, token):
+    def _get_all(self, registry, token):
         parent_key = self._generate_key(token, multi=True)
         return [(
             registry.get(self._generate_key(_token)),
@@ -59,7 +65,7 @@ class Provider:
         try:
             self._instances.get(key)
             self._factories.get(key)
-        except RegistrationNotFoundError:
+        except RegistrationNotFound:
             return registry.register(instance_or_factory, key)
 
         raise RegistrationError('Failed to register instance or factory')
@@ -74,7 +80,7 @@ class Provider:
 
         try:
             tokens = self._tokens.get(parent_key)
-        except RegistrationNotFoundError:
+        except RegistrationNotFound:
             tokens = set()
             self._tokens.register(tokens, parent_key)
 

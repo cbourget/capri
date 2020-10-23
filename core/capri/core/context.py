@@ -7,11 +7,17 @@ class AppContext:
         self.settings = settings
         self._injector = Injector(providers, self)
 
-    def get_value(self, token, *, multi=False):
-        return self._injector.get_value(token, multi=multi)
+    def get_value(self, token):
+        return self._injector.get_value(token)
 
-    def get_instance(self, token, *, multi=False):
-        return self._injector.get_instance(token, multi=multi)
+    def get_values(self, token):
+        return self._injector.get_values(token)
+
+    def get_instance(self, token):
+        return self._injector.get_instance(token)
+
+    def get_instances(self, token):
+        return self._injector.get_instances(token)
 
 
 class RootContext(AppContext):
