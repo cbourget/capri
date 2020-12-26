@@ -1,4 +1,4 @@
-from capri.utils.nestedict import NesteDict
+from capri.utils import NesteDict
 
 
 class Registry:

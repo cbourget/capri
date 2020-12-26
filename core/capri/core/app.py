@@ -1,12 +1,10 @@
 import inspect
 
-from capri.utils.nestedict import NesteDict
-from capri.utils.singleton import Singleton
+from capri.utils import NesteDict, Singleton
 
-from capri.core.context import RootContext
-from capri.core.provider import Provider
-from capri.core.registry import Registry, RegistrationNotFound
-
+from .context import RootContext
+from .provider import Provider
+from .registry import Registry, RegistrationNotFound
 
 class App(metaclass=Singleton):
 
@@ -32,6 +30,7 @@ class App(metaclass=Singleton):
         provider.register_factory(factory, token, force=force)
 
     def create_context(self, factory=RootContext, iface=None, *args, **kwargs):
+        token = iface or factory
         if not iface:
             iface = [factory]
         elif not isinstance(iface, list):
@@ -41,8 +40,10 @@ class App(metaclass=Singleton):
             iface.append(RootContext)
 
         providers = [self._get_context_provider(i) for i in iface]
+        context = factory(self.settings, providers, *args, **kwargs)
+        providers[0].register_instance(context, token)
 
-        return factory(self.settings, providers, *args, **kwargs)
+        return context
 
     def include(self, path, *args, **kwargs):
         if path.startswith('.'):

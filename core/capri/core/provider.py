@@ -1,7 +1,4 @@
-from capri.core.registry import (
-    Registry,
-    RegistrationError,
-    RegistrationNotFound)
+from .registry import Registry, RegistrationError, RegistrationNotFound
 
 
 class Provider:

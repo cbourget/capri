@@ -1,4 +1,4 @@
-from capri.core.injector import Injector
+from .injector import Injector
 
 
 class AppContext:

@@ -1,8 +1,9 @@
 from inspect import isclass, signature
 
-from capri.core.provider import Provider
-from capri.core.registry import RegistrationNotFound
 from capri.utils.annotation import param_is_positionnal
+
+from .provider import Provider
+from .registry import RegistrationNotFound
 
 
 class Injector:
