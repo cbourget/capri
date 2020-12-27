@@ -1,171 +1,80 @@
-from inspect import isclass, signature
+from typing import List, Tuple, Union
 
-from capri.utils.annotation import param_is_positionnal
-
+from .exceptions import DependencyNotFound, RegistrationNotFound
+from .context import Context
+from .factory import Factory
 from .provider import Provider
-from .registry import RegistrationNotFound
+from .typing import Item, Token
 
 
 class Injector:
 
-    def __init__(self, providers, context):
+    def __init__(self, providers: List[Provider], context: Context):
         self._providers = providers
         self._context = context
-        self._cache = Provider()
+        self._cached = Provider()
 
-    def get_value(self, token):
+    def get(self, token: Token) -> Item:
         for provider in self._providers:
             try:
-                return provider.get_value(token)
+                return self._get_from_provider(token, provider)
             except RegistrationNotFound:
                 pass
 
-        raise RegistrationNotFound(token)
+        raise DependencyNotFound(token)
 
-    def get_values(self, token):
-        values = []
+    def get_all(self, token: Token) -> List[Tuple[Item, Token]]:
+        items = []
         tokens = []
         for provider in self._providers:
             try:
-                result = provider.get_values(token)
+                _items = self._get_all_from_provider(token, provider)
             except RegistrationNotFound:
                 continue
 
-            for value, _token in result:
+            for item, _token in _items:
                 if _token not in tokens:
-                    values.append((value, _token))
-
-        if values:
-            return values
-
-        raise RegistrationNotFound(token)
-
-    def get_instance(self, token):
-        try:
-            return self._get_instance_from_cache(token)
-        except RegistrationNotFound:
-            pass
-
-        for provider in self._providers:
-            try:
-                return self._get_instance_from_provider(token, provider)
-            except RegistrationNotFound:
-                pass
-
-        raise RegistrationNotFound(token)
-
-    def get_instances(self, token):
-        instances = []
-        tokens = []
-        for provider in self._providers:
-            try:
-                items = self._get_instance_from_provider(
-                    token, provider, multi=True)
-            except RegistrationNotFound:
-                continue
-
-            for instance, _token in items:
-                if _token not in tokens:
-                    instances.append((instance, _token))
+                    items.append((item, _token))
                     tokens.append(_token)
 
-        if instances:
-            return instances
+        if items:
+            return items
 
-        raise RegistrationNotFound(token)
+        raise DependencyNotFound(token)
 
-    def _get_instance_from_provider(self, token, provider, *, multi=False):
-        getter = provider.get_instance if not multi else provider.get_instances
+    def _cache(self, item: Item, token: Token):
+        self._cached.register(item, token)
+
+    def _get_from_cache(self, token: Token):
+        return self._cached.get(token)
+
+    def _get_from_provider(
+        self,
+        token: Token,
+        provider:
+        Provider
+    ) -> Item:
+        item = provider.get(token)
+        return self._resolve(item, token)
+
+    def _get_all_from_provider(
+        self,
+        token: Token,
+        provider: Provider
+    ) -> List[Tuple[Item, Token]]:
+        items = provider.get_all(token)
+        return [(self._resolve(i, t), t) for i, t in items]
+
+    def _resolve(self, item: Union[Item, Factory], token: Token) -> Item:
         try:
-            return getter(token)
+            return self._get_from_cache(token)
         except RegistrationNotFound:
             pass
 
-        if multi is True:
-            return self._resolve_factories(provider, token)
-        return self._resolve_factory(provider, token)
-
-    def _get_instance_from_cache(self, token):
-        return self._cache.get_instance(token)
-
-    def _cache_instance(self, instance, token):
-        self._cache.register_instance(instance, token)
-
-    def _resolve_factory(self, provider, token):
-        factory = provider.get_factory(token)
-        args, kwargs = self._get_factory_args(factory)
-        instance = factory(*args, **kwargs)
-        self._cache_instance(instance, token)
-        return instance
-
-    def _resolve_factories(self, provider, token):
-        instances = []
-        factories = provider.get_factories(token)
-        for factory, token in factories:
-            try:
-                instance = self._get_instance_from_cache(token)
-            except RegistrationNotFound:
-                instance = self._get_instance_from_provider(token, provider)
-
-            instances.append((instance, token))
-
-        return instances
-
-    def _get_factory_args(self, factory):
-        args = []
-        kwargs = {}
-
-        parameters = signature(factory).parameters.values()
-        func = factory if not isclass(factory) else factory.__init__
-        for param in parameters:
-            try:
-                arg = self._resolve_function_param(func, param)
-            except BadSignature as exc:
-                if len(parameters) == 1:
-                    return [self._context], {}
-                else:
-                    raise exc
-
-            if param_is_positionnal(param):
-                args.append(arg)
-            else:
-                kwargs[param.name] = args
-
-        return args, kwargs
-
-    def _resolve_function_param(self, function, param):
-        name = param.name
-        annon = function.__annotations__.get(name)
-        if not annon:
-            raise BadSignature(name)
-
-        for getter in (self._context.get_instance, self._context.get_value):
-            try:
-                arg = getter(annon)
-            except RegistrationNotFound:
-                pass
-            else:
-                break
+        if isinstance(item, Factory):
+            resolved = item(self._context)
+            self._cache(resolved, token)
         else:
-            raise DependencyNotFound(name, annon)    
+            resolved = item
 
-        return arg
-
-
-class InjectionError(Exception):
-    pass
-
-
-class DependencyNotFound(InjectionError):
-
-    def __init__(self, name, token):
-        super().__init__(
-            'Failed to inject: {}: {}. '.format(name, token))
-
-
-class BadSignature(InjectionError):
-
-    def __init__(self, arg):
-        super().__init__(
-            'Argument "{}" is not annotated. '
-            'Can\'t inject dependency.'.format(arg))
+        return resolved

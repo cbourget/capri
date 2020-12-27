@@ -1,24 +1,19 @@
-from .injector import Injector
+from typing import List, Tuple
+from capri.utils import NesteDict
+
+from .provider import Provider
+from .typing import Item, Token
 
 
-class AppContext:
+class Context:
 
-    def __init__(self, settings, providers):
+    def __init__(self, settings: NesteDict, providers: List[Provider]):
+        from .injector import Injector
         self.settings = settings
         self._injector = Injector(providers, self)
 
-    def get_value(self, token):
-        return self._injector.get_value(token)
+    def get(self, token: Token) -> Item:
+        return self._injector.get(token)
 
-    def get_values(self, token):
-        return self._injector.get_values(token)
-
-    def get_instance(self, token):
-        return self._injector.get_instance(token)
-
-    def get_instances(self, token):
-        return self._injector.get_instances(token)
-
-
-class RootContext(AppContext):
-    pass
+    def get_all(self, token: Token) -> List[Tuple[Item, Token]]:
+        return self._injector.get_all(token)

@@ -30,7 +30,7 @@ context = app.create_context()
 
 # Retrieve the user service instance from it.
 # If it doesn't exist, it'll get created and cached.
-user_service = context.get_instance(UserService)
+user_service = context.get(UserService)
 user = user_service.by_id(1)
 ```
 
@@ -61,7 +61,7 @@ def database_factory(context):
 
 def bootstrap(app):
     # Register the database factory under the Database interface.
-    app.register_factory(database_factory, Database)
+    app.register(database_factory, Database, factory=True)
 ```
 
 ```python
